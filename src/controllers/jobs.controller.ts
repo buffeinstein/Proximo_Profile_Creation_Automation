@@ -12,11 +12,20 @@ router.get("/api/jobs/:jobId", (req: Request, res: Response) => {
     const { jobId } = req.params;
     const db = getDb();
 
+    type JobRow = {
+      id: number;
+      resume_id: number;
+      status: string;
+      total_roles: number;
+      completed_roles: number;
+      last_error: string | null;
+    };
+
     const row = db.prepare(`
       SELECT id, resume_id, status, total_roles, completed_roles, last_error
       FROM jobs
       WHERE id = ?
-    `).get(jobId);
+    `).get(jobId) as JobRow | undefined;
 
     if (!row) return res.status(404).json({ message: "Job not found" });
 

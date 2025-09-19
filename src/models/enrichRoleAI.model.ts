@@ -134,6 +134,9 @@ export async function enrichRoleAI(role: RoleForAI): Promise<RoleEnrichment> {
     }
 
     // Sanitize / fallback each field
+    if (!parsed) {
+      return buildStub(role);
+    }
     const desc = (parsed.role_description || role.role_description || "").trim();
     const stars = Array.isArray(parsed.star_stories) ? parsed.star_stories.slice(0, 3) : [];
     const metrics = Array.isArray(parsed.metrics) ? parsed.metrics.slice(0, 3) : [];
