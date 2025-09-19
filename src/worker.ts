@@ -12,9 +12,6 @@ import {
 } from "./infrastructure/jobsRepo";
 import { enrichRoleAI } from "./models/enrichRoleAI.model";
 
-// import * as RoleAI from "./models/enrichRoleAI.model";
-// console.log("[debug] enrichRoleAI module exports:", RoleAI);
-// process.exit(0);
 
 const LOOP_SLEEP_MS = 2_000;
 const BETWEEN_ROLE_SLEEP_MS = 300; // small delay to avoid hammering model API
@@ -22,16 +19,6 @@ let shuttingDown = false;
 
 async function main() {
   console.log("👷 Worker started (resume enrichment)…");
-
-  // Optionally: clean up orphan 'running' jobs after a crash (convert to pending)
-  // Uncomment if you want auto-recovery logic.
-  // const db = getDb();
-  // db.prepare(`
-  //   UPDATE jobs
-  //      SET status='pending',
-  //          updated_at = CURRENT_TIMESTAMP
-  //    WHERE status='running'
-  // `).run();
 
   while (!shuttingDown) {
     try {
