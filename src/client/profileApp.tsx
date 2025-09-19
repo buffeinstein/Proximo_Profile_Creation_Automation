@@ -11,8 +11,8 @@ interface JobProgress {
 interface Role {
   role_id: string;
   ordinal: number;
-  title?: string;
-  company?: string;
+  role_title?: string;
+  company_name?: string;
   role_duration?: number;
   company_size?: string;
   company_industry?: string;
@@ -240,6 +240,13 @@ const ProfileApp: React.FC = () => {
         return;
       }
       const json = await res.json();
+
+      // ADD THIS DETAILED LOGGING
+      console.log("[FE:poll:snapshot] FULL RESPONSE:", json);
+      console.log("[FE:poll:snapshot] roles array:", json.roles);
+      console.log("[FE:poll:snapshot] first role detail:", json.roles?.[0]);
+      
+
       const rolesCount = json.roles?.length || 0;
       const firstRole = rolesCount ? json.roles[0] : null;
       const prev = prevRolesCountRef.current;
@@ -313,29 +320,74 @@ const ProfileApp: React.FC = () => {
     expectedCount
   );
 
-  // Organize snapshot roles by ordinal (fallback to index if missing)
+  // // Organize snapshot roles by ordinal (fallback to index if missing)
+  // const snapshotRolesByOrdinal: Record<number, Role> = {};
+  // if (snapshot?.roles) {
+  //   snapshot.roles
+  //     .slice()
+  //     .sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0))
+  //     .forEach((r, idx) => {
+  //       const ord = typeof r.ordinal === "number" ? r.ordinal : idx;
+  //       snapshotRolesByOrdinal[ord] = { ...r, ordinal: ord };
+  //     });
+  // }
+
+    // Organize snapshot roles (normalize 1-based ordinals from API to 0-based for UI)
   const snapshotRolesByOrdinal: Record<number, Role> = {};
   if (snapshot?.roles) {
-    snapshot.roles
-      .slice()
-      .sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0))
-      .forEach((r, idx) => {
-        const ord = typeof r.ordinal === "number" ? r.ordinal : idx;
-        snapshotRolesByOrdinal[ord] = { ...r, ordinal: ord };
-      });
+    snapshot.roles.forEach((r, idx) => {
+      // If API gives 1,2,3... convert to 0,1,2...
+      const zeroIdx = (typeof r.ordinal === "number" ? r.ordinal - 1 : idx);
+      const ord = zeroIdx < 0 ? 0 : zeroIdx;
+      snapshotRolesByOrdinal[ord] = { ...r, ordinal: ord };
+    });
   }
 
-  // Build display roles
+
   console.log("[FE:debug] raw first snapshot role", snapshot?.roles?.[0]);
-  const displayRoles: DisplayRole[] = Array.from({ length: roleCount }, (_, i) => {
-    const sr = snapshotRolesByOrdinal[i];
-    if (sr) return { ...sr, _placeholder: false };
-    return {
-      role_id: `placeholder-${i}`,
-      ordinal: i,
-      _placeholder: true
-    };
-  });
+
+  const displayRoles: DisplayRole[] = (() => {
+    // Highest mapped ordinal index
+    const highestIdx = Object.keys(snapshotRolesByOrdinal).length
+      ? Math.max(...Object.keys(snapshotRolesByOrdinal).map(n => Number(n)))
+      : -1;
+    const discoveredCount = Object.keys(snapshotRolesByOrdinal).length;
+    const expectedCount = jobProgress?.total_roles || 0;
+
+    // Ensure we show enough cards for:
+    // - discovered roles
+    // - expected roles
+    // - highest ordinal index + 1
+    const roleCount = Math.max(
+      MIN_BASE_PLACEHOLDERS,
+      discoveredCount,
+      expectedCount,
+      highestIdx + 1
+    );
+
+    return Array.from({ length: roleCount }, (_, i) => {
+      const sr = snapshotRolesByOrdinal[i];
+      if (sr) return { ...sr, _placeholder: false };
+      return {
+        role_id: `placeholder-${i}`,
+        ordinal: i,
+        _placeholder: true
+      };
+    });
+  })();
+
+
+  // // Build display roles
+  // console.log("[FE:debug] raw first snapshot role", snapshot?.roles?.[0]);
+  // const displayRoles: DisplayRole[] = Array.from({ length: roleCount }, (_, i) => {
+  //   const sr = snapshotRolesByOrdinal[i];
+  //   if (sr) return { ...sr, _placeholder: false };
+  //   return {
+  //     role_id: `placeholder-${i}`,
+  //     ordinal: i,
+  //     _placeholder: true
+  //   };
+  // });
 
   // Log when roles become available for rendering
   useEffect(() => {
@@ -380,12 +432,12 @@ const ProfileApp: React.FC = () => {
         <div style={inlineHeaderLine}>
           <span>
             {valOrPlaceholder(
-              role.title,
+              role.role_title,
               `Role Title${role._placeholder ? "" : ""}`
             )}
           </span>
             <span style={{ opacity: 0.5 }}>—</span>
-          <span>{valOrPlaceholder(role.company, "Company")}</span>
+          <span>{valOrPlaceholder(role.company_name, "Company")}</span>
           <span style={{ opacity: 0.5 }}>—</span>
           <span>
             {durationDisplay
