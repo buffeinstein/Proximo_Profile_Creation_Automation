@@ -20,7 +20,7 @@ temp/
 .cache/
 .vite/
 vite.config.timestamp-*  # Occasionally created timestamp artifacts
-
+db/dev.db
 # -------------------------------
 # TypeScript
 # -------------------------------

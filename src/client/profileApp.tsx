@@ -34,60 +34,62 @@ interface Snapshot {
 }
 
 const POLL_INTERVAL_MS = 1000;
-
-// Always show at least THIS MANY placeholder role modules
 const MIN_BASE_PLACEHOLDERS = 1;
 
+/* ====== STYLES (VISUAL ONLY CHANGES) ====== */
 const tagStyle: React.CSSProperties = {
   display: "inline-block",
   fontSize: 11,
-  padding: "2px 6px",
-  borderRadius: 12,
-  background: "#eef2f5",
-  color: "#333",
+  padding: "4px 10px",
+  borderRadius: 999,
+  background: "linear-gradient(90deg,#6366F1,#3B82F6)",
+  color: "#fff",
   marginRight: 6,
-  marginBottom: 4,
-  border: "1px solid #d5dde3"
+  marginBottom: 6,
+  border: "1px solid rgba(255,255,255,0.4)",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+  letterSpacing: 0.3
 };
 
 const boxLabelStyle: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 600,
-  letterSpacing: 0.5,
+  letterSpacing: 0.6,
   textTransform: "uppercase",
-  color: "#555",
-  marginBottom: 4
+  color: "#334155",
+  marginBottom: 4,
+  opacity: 0.85
 };
 
 const textBoxStyle: React.CSSProperties = {
-  border: "1px solid #d9d9d9",
-  background: "#fff",
-  borderRadius: 6,
-  padding: "8px 10px",
+  border: "1px solid #d0d7e2",
+  background: "linear-gradient(135deg,#ffffff,#f1f5f9)",
+  borderRadius: 10,
+  padding: "10px 12px",
   minHeight: 54,
   fontSize: 13,
-  lineHeight: 1.35
+  lineHeight: 1.4,
+  boxShadow: "0 1px 2px rgba(0,0,0,0.06)"
 };
 
 const smallMetricBox: React.CSSProperties = {
   ...textBoxStyle,
-  minHeight: 36,
-  width: "100%",
-  padding: "6px 8px",
-  fontSize: 12
+  minHeight: 40,
+  padding: "8px 10px"
 };
 
 const roleCardStyle: React.CSSProperties = {
-  border: "1px solid #ddd",
-  borderRadius: 10,
-  padding: 16,
-  marginBottom: 18,
-  background: "#fafafa",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.04)"
+  border: "1px solid #cbd5e1",
+  borderRadius: 16,
+  padding: 18,
+  marginBottom: 22,
+  background: "linear-gradient(145deg,#ffffff 0%,#f0f4ff 55%,#e0ecff 100%)",
+  boxShadow: "0 4px 10px -2px rgba(30,41,59,0.15), 0 1px 3px rgba(0,0,0,0.08)",
+  transition: "transform 0.25s ease, box-shadow 0.25s ease"
 };
 
 const placeholderStyle: React.CSSProperties = {
-  opacity: 0.45,
+  opacity: 0.5,
   fontStyle: "italic"
 };
 
@@ -96,13 +98,17 @@ const inlineHeaderLine: React.CSSProperties = {
   fontSize: 14,
   display: "flex",
   flexWrap: "wrap",
-  gap: 6
+  gap: 6,
+  color: "#1e293b",
+  letterSpacing: 0.2
 };
 
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: 15,
   fontWeight: 600,
-  margin: "18px 0 10px"
+  margin: "18px 0 10px",
+  letterSpacing: 0.5,
+  color: "#1e293b"
 };
 
 interface DisplayRole extends Role {
@@ -138,7 +144,7 @@ const ProfileApp: React.FC = () => {
   const pollStartTimeRef = useRef<number | null>(null);
   const ingestRequestStartRef = useRef<number | null>(null);
 
-  // Start ingest
+  // Start ingest (LOGIC UNCHANGED)
   const handleStart = useCallback(async () => {
     console.log("[FE:action] start-ingest click", {
       candidateName: candidateName || null,
@@ -176,7 +182,7 @@ const ProfileApp: React.FC = () => {
         let msg = `HTTP ${resp.status}`;
         try {
           const errJson = await resp.json();
-            if (errJson?.message) msg = errJson.message;
+          if (errJson?.message) msg = errJson.message;
         } catch { /* ignore */ }
         console.error("[FE:ingest] error response", {
           status: resp.status,
@@ -204,7 +210,7 @@ const ProfileApp: React.FC = () => {
     }
   }, [candidateName, jobLink, resumeId, jobId]);
 
-  // Poll job
+  // Poll job (LOGIC UNCHANGED)
   const pollJob = useCallback(async () => {
     if (!jobId) return;
     pollAttemptJobRef.current += 1;
@@ -228,7 +234,7 @@ const ProfileApp: React.FC = () => {
     }
   }, [jobId]);
 
-  // Poll snapshot
+  // Poll snapshot (LOGIC UNCHANGED)
   const pollSnapshot = useCallback(async () => {
     if (!resumeId) return;
     pollAttemptSnapshotRef.current += 1;
@@ -241,11 +247,9 @@ const ProfileApp: React.FC = () => {
       }
       const json = await res.json();
 
-      // ADD THIS DETAILED LOGGING
       console.log("[FE:poll:snapshot] FULL RESPONSE:", json);
       console.log("[FE:poll:snapshot] roles array:", json.roles);
       console.log("[FE:poll:snapshot] first role detail:", json.roles?.[0]);
-      
 
       const rolesCount = json.roles?.length || 0;
       const firstRole = rolesCount ? json.roles[0] : null;
@@ -265,7 +269,7 @@ const ProfileApp: React.FC = () => {
     }
   }, [resumeId]);
 
-  // Start intervals when IDs appear
+  // Start intervals (LOGIC UNCHANGED)
   useEffect(() => {
     if (!resumeId || !jobId) return;
     pollStartTimeRef.current = performance.now();
@@ -288,7 +292,7 @@ const ProfileApp: React.FC = () => {
     };
   }, [resumeId, jobId, pollJob, pollSnapshot]);
 
-  // Stop polling after completion
+  // Stop polling after completion (LOGIC UNCHANGED)
   useEffect(() => {
     if (jobProgress?.status === "completed") {
       if (jobIntervalRef.current) window.clearInterval(jobIntervalRef.current);
@@ -302,62 +306,29 @@ const ProfileApp: React.FC = () => {
         totalDurationMs,
         finalRolesCount: snapshot?.roles?.length || 0
       });
-      // final snapshot fetch
       pollSnapshot();
     }
   }, [jobProgress, pollSnapshot, snapshot]);
 
-  // Determine how many role modules to show:
-  // Priority:
-  // 1. snapshot.roles length (actual roles discovered)
-  // 2. jobProgress.total_roles (expected)
-  // 3. Minimum placeholder baseline
-  const discoveredCount = snapshot?.roles?.length || 0;
-  const expectedCount = jobProgress?.total_roles || 0;
-  const roleCount = Math.max(
-    MIN_BASE_PLACEHOLDERS,
-    discoveredCount,
-    expectedCount
-  );
-
-  // // Organize snapshot roles by ordinal (fallback to index if missing)
-  // const snapshotRolesByOrdinal: Record<number, Role> = {};
-  // if (snapshot?.roles) {
-  //   snapshot.roles
-  //     .slice()
-  //     .sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0))
-  //     .forEach((r, idx) => {
-  //       const ord = typeof r.ordinal === "number" ? r.ordinal : idx;
-  //       snapshotRolesByOrdinal[ord] = { ...r, ordinal: ord };
-  //     });
-  // }
-
-    // Organize snapshot roles (normalize 1-based ordinals from API to 0-based for UI)
+  // Snapshot roles normalization (LOGIC UNCHANGED)
   const snapshotRolesByOrdinal: Record<number, Role> = {};
   if (snapshot?.roles) {
     snapshot.roles.forEach((r, idx) => {
-      // If API gives 1,2,3... convert to 0,1,2...
       const zeroIdx = (typeof r.ordinal === "number" ? r.ordinal - 1 : idx);
       const ord = zeroIdx < 0 ? 0 : zeroIdx;
       snapshotRolesByOrdinal[ord] = { ...r, ordinal: ord };
     });
   }
 
-
   console.log("[FE:debug] raw first snapshot role", snapshot?.roles?.[0]);
 
   const displayRoles: DisplayRole[] = (() => {
-    // Highest mapped ordinal index
     const highestIdx = Object.keys(snapshotRolesByOrdinal).length
       ? Math.max(...Object.keys(snapshotRolesByOrdinal).map(n => Number(n)))
       : -1;
     const discoveredCount = Object.keys(snapshotRolesByOrdinal).length;
     const expectedCount = jobProgress?.total_roles || 0;
 
-    // Ensure we show enough cards for:
-    // - discovered roles
-    // - expected roles
-    // - highest ordinal index + 1
     const roleCount = Math.max(
       MIN_BASE_PLACEHOLDERS,
       discoveredCount,
@@ -376,20 +347,6 @@ const ProfileApp: React.FC = () => {
     });
   })();
 
-
-  // // Build display roles
-  // console.log("[FE:debug] raw first snapshot role", snapshot?.roles?.[0]);
-  // const displayRoles: DisplayRole[] = Array.from({ length: roleCount }, (_, i) => {
-  //   const sr = snapshotRolesByOrdinal[i];
-  //   if (sr) return { ...sr, _placeholder: false };
-  //   return {
-  //     role_id: `placeholder-${i}`,
-  //     ordinal: i,
-  //     _placeholder: true
-  //   };
-  // });
-
-  // Log when roles become available for rendering
   useEffect(() => {
     if (snapshot?.roles?.length) {
       console.log("[FE:render] roles available", {
@@ -428,17 +385,16 @@ const ProfileApp: React.FC = () => {
 
     return (
       <div key={role.role_id} style={roleCardStyle}>
-        {/* Header line: role - company - duration */}
         <div style={inlineHeaderLine}>
           <span>
             {valOrPlaceholder(
               role.role_title,
-              `Role Title${role._placeholder ? "" : ""}`
+              `Role Title`
             )}
           </span>
-            <span style={{ opacity: 0.5 }}>—</span>
+          <span style={{ opacity: 0.4 }}>•</span>
           <span>{valOrPlaceholder(role.company_name, "Company")}</span>
-          <span style={{ opacity: 0.5 }}>—</span>
+          <span style={{ opacity: 0.4 }}>•</span>
           <span>
             {durationDisplay
               ? durationDisplay
@@ -446,8 +402,7 @@ const ProfileApp: React.FC = () => {
           </span>
         </div>
 
-        {/* Role tags (seniority, role industry) */}
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap" }}>
           <span style={tagStyle}>
             {role.role_seniority || "Seniority"}
           </span>
@@ -456,18 +411,16 @@ const ProfileApp: React.FC = () => {
           </span>
         </div>
 
-        {/* Company tags (size, industry) */}
-        <div style={{ marginTop: 2 }}>
+        <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap" }}>
           <span style={tagStyle}>
             {role.company_size || "Company Size"}
           </span>
-          <span style={tagStyle}>
+            <span style={tagStyle}>
             {role.company_industry || "Company Industry"}
           </span>
         </div>
 
-        {/* Role Description */}
-        <div style={{ marginTop: 14 }}>
+        <div style={{ marginTop: 16 }}>
           <div style={boxLabelStyle}>Role Description</div>
           <div style={textBoxStyle}>
             {role.role_description
@@ -476,8 +429,7 @@ const ProfileApp: React.FC = () => {
           </div>
         </div>
 
-        {/* STAR Stories */}
-        <div style={{ marginTop: 14 }}>
+        <div style={{ marginTop: 16 }}>
           <div style={boxLabelStyle}>STAR Stories</div>
           {stars.map((s, i) => (
             <div
@@ -491,8 +443,7 @@ const ProfileApp: React.FC = () => {
           ))}
         </div>
 
-        {/* Metrics */}
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginTop: 12 }}>
           <div style={boxLabelStyle}>Metrics</div>
           <div style={{ display: "flex", gap: 10 }}>
             {metrics.map((m, i) => (
@@ -506,66 +457,129 @@ const ProfileApp: React.FC = () => {
     );
   };
 
+  /* ================= RENDER ================= */
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "Inter, Arial, sans-serif" }}>
-      {/* LEFT: Profile / Roles */}
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        fontFamily: "Inter, Arial, sans-serif",
+        background:
+          "linear-gradient(120deg,#1e293b 0%, #0f172a 40%, #1e3a8a 100%)",
+        color: "#0f172a"
+      }}
+    >
+      {/* LEFT: Profile / Roles (structure unchanged, removed 'Roles' heading & resumeId text) */}
       <div
         style={{
           flex: 1.4,
-            padding: "24px 28px 40px",
-          borderRight: "1px solid #ccc",
+          padding: "24px 28px 40px",
+          borderRight: "1px solid rgba(255,255,255,0.08)",
           overflowY: "auto",
-          background: "#f5f7fa"
+          background:
+            "linear-gradient(180deg,rgba(255,255,255,0.85) 0%,rgba(240,245,255,0.92) 60%,rgba(230,240,255,0.95) 100%)",
+          backdropFilter: "blur(4px)"
         }}
       >
-        <div style={{ marginBottom: 18 }}>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>{displayName}</h1>
-          <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
-            Resume ID: {resumeId ? resumeId : <span style={placeholderStyle}>—</span>}
-          </div>
+        <div style={{ marginBottom: 12 }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 26,
+              fontWeight: 600,
+              background: "linear-gradient(90deg,#0f172a,#334155,#1e3a8a)",
+              WebkitBackgroundClip: "text",
+              color: "transparent",
+              letterSpacing: 0.5
+            }}
+          >
+            {displayName}
+          </h1>
         </div>
 
-        <h2 style={sectionTitleStyle}>Roles</h2>
+        {/* (Removed explicit <h2>Roles) */}
 
         {displayRoles.map(renderRoleCard)}
-
       </div>
 
-      {/* RIGHT: Controls */}
-      <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
-        <h1 style={{ marginTop: 0 }}>Controls</h1>
+      {/* RIGHT: Controls (structure unchanged, removed heading text) */}
+      <div
+        style={{
+          flex: 1,
+          padding: 24,
+          overflowY: "auto",
+          background:
+            "linear-gradient(180deg,rgba(15,23,42,0.55) 0%,rgba(30,41,59,0.6) 100%)",
+          backdropFilter: "blur(6px)",
+          color: "#f1f5f9",
+          position: "relative"
+        }}
+      >
+        {/* Removed <h1>Controls but kept spacing */}
+        <div style={{ height: 4 }} />
 
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontWeight: "bold" }}>Candidate Name</label>
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ display: "block", fontWeight: 600, fontSize: 13, letterSpacing: 0.5 }}>
+            Candidate Name
+          </label>
           <input
             type="text"
             value={candidateName}
             onChange={e => setCandidateName(e.target.value)}
             placeholder="Name"
-            style={{ width: "100%", padding: 8, marginTop: 4 }}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              marginTop: 6,
+              borderRadius: 10,
+              border: "1px solid #334155",
+              background: "#1e293b",
+              color: "#f8fafc",
+              fontSize: 14,
+              outline: "none",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.4)"
+            }}
             disabled={ingestLoading}
           />
         </div>
 
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontWeight: "bold" }}>Resume (PDF)</label>
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ display: "block", fontWeight: 600, fontSize: 13, letterSpacing: 0.5 }}>
+            Resume (PDF)
+          </label>
           <input
             type="file"
             accept="application/pdf"
             ref={fileInputRef}
             disabled={ingestLoading}
-            style={{ marginTop: 4 }}
+            style={{
+              marginTop: 6,
+              color: "#f8fafc"
+            }}
           />
         </div>
 
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontWeight: "bold" }}>Job Link</label>
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ display: "block", fontWeight: 600, fontSize: 13, letterSpacing: 0.5 }}>
+            Job Link
+          </label>
           <input
             type="url"
             value={jobLink}
             onChange={e => setJobLink(e.target.value)}
             placeholder="https://example.com/job"
-            style={{ width: "100%", padding: 8, marginTop: 4 }}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              marginTop: 6,
+              borderRadius: 10,
+              border: "1px solid #334155",
+              background: "#1e293b",
+              color: "#f8fafc",
+              fontSize: 14,
+              outline: "none",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.4)"
+            }}
             disabled={ingestLoading}
           />
         </div>
@@ -574,59 +588,78 @@ const ProfileApp: React.FC = () => {
           onClick={handleStart}
           disabled={ingestLoading}
           style={{
-            padding: "10px 20px",
-            backgroundColor: ingestLoading ? "#999" : "#007BFF",
+            padding: "12px 26px",
+            background: ingestLoading
+              ? "linear-gradient(90deg,#64748b,#475569)"
+              : "linear-gradient(90deg,#4f46e5,#3b82f6)",
             color: "#fff",
             border: "none",
-            borderRadius: 4,
+            borderRadius: 14,
             cursor: ingestLoading ? "default" : "pointer",
             fontSize: 15,
-            fontWeight: 600
+            fontWeight: 600,
+            letterSpacing: 0.5,
+            boxShadow: "0 4px 14px -4px rgba(59,130,246,0.6), 0 2px 6px -1px rgba(30,41,59,0.5)",
+            transition: "transform 0.2s, box-shadow 0.2s"
           }}
         >
           {ingestLoading ? "Starting..." : "Start"}
         </button>
 
         {ingestError && (
-          <div style={{ marginTop: 16, color: "red" }}>Error: {ingestError}</div>
+          <div style={{ marginTop: 18, color: "#f87171", fontWeight: 500 }}>
+            Error: {ingestError}
+          </div>
         )}
 
         {jobProgress && (
-          <div style={{ marginTop: 32 }}>
-            <h2 style={{ margin: "0 0 12px" }}>Progress</h2>
-            <div style={{ fontSize: 14, marginBottom: 8 }}>
+          <div style={{ marginTop: 38 }}>
+            <h2
+              style={{
+                margin: "0 0 14px",
+                fontSize: 18,
+                fontWeight: 600,
+                letterSpacing: 0.6,
+                background: "linear-gradient(90deg,#93c5fd,#e0f2fe)",
+                WebkitBackgroundClip: "text",
+                color: "transparent"
+              }}
+            >
+              Progress
+            </h2>
+            <div style={{ fontSize: 14, marginBottom: 10 }}>
               Status: <strong>{jobProgress.status}</strong>
             </div>
             <div
               style={{
-                height: 16,
-                background: "#eee",
-                borderRadius: 8,
+                height: 18,
+                background: "rgba(255,255,255,0.15)",
+                borderRadius: 12,
                 overflow: "hidden",
-                marginBottom: 4
+                marginBottom: 6,
+                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)"
               }}
             >
               <div
                 style={{
                   width: `${progressPercent}%`,
-                  background: jobProgress.status === "completed" ? "#28a745" : "#007BFF",
+                  background:
+                    jobProgress.status === "completed"
+                      ? "linear-gradient(90deg,#16a34a,#4ade80)"
+                      : "linear-gradient(90deg,#6366f1,#3b82f6,#0ea5e9)",
                   height: "100%",
-                  transition: "width 0.4s"
+                  transition: "width 0.45s ease",
+                  boxShadow: "0 0 6px rgba(59,130,246,0.7)"
                 }}
               />
             </div>
-            <div style={{ fontSize: 12, color: "#333" }}>
+            <div style={{ fontSize: 12, color: "#cbd5e1", letterSpacing: 0.4 }}>
               {jobProgress.completed_roles} / {jobProgress.total_roles} roles enriched ({progressPercent}%)
             </div>
           </div>
         )}
 
-        {(resumeId || jobId) && (
-          <div style={{ marginTop: 28, fontSize: 12, opacity: 0.75 }}>
-            <div>resumeId: {resumeId}</div>
-            <div>jobId: {jobId}</div>
-          </div>
-        )}
+        {/* Removed explicit resumeId / jobId output per request */}
       </div>
     </div>
   );
