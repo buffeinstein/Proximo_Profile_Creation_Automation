@@ -7,6 +7,8 @@
     "dev": "concurrently \"npm:dev:client\" \"npm:dev:server\"",
     "dev:client": "vite --config vite.config.mts",
     "dev:server": "tsx watch src/server.ts",
+    "worker": "tsx src/worker.ts",
+    "dev:worker": "tsx watch src/worker.ts",
     "build": "tsc && vite build --config vite.config.mts"
   },
   "dependencies": {
@@ -15,6 +17,7 @@
     "dotenv": "^16.3.1",
     "express": "^5.1.0",
     "multer": "^2.0.2",
+    "openai": "^5.21.0",
     "pdf-lib": "^1.17.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

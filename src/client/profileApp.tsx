@@ -326,6 +326,7 @@ const ProfileApp: React.FC = () => {
   }
 
   // Build display roles
+  console.log("[FE:debug] raw first snapshot role", snapshot?.roles?.[0]);
   const displayRoles: DisplayRole[] = Array.from({ length: roleCount }, (_, i) => {
     const sr = snapshotRolesByOrdinal[i];
     if (sr) return { ...sr, _placeholder: false };
@@ -475,6 +476,7 @@ const ProfileApp: React.FC = () => {
         <h2 style={sectionTitleStyle}>Roles</h2>
 
         {displayRoles.map(renderRoleCard)}
+
       </div>
 
       {/* RIGHT: Controls */}
