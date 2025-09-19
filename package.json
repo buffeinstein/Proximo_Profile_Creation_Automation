@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"npm:dev:client\" \"npm:dev:server\"",
     "dev:client": "vite --config vite.config.mts",
-    "dev:server": "tsx watch server.ts",
+    "dev:server": "tsx watch src/server.ts",
     "build": "tsc && vite build --config vite.config.mts"
   },
   "dependencies": {
