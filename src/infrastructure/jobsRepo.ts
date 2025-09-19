@@ -39,35 +39,6 @@ const db = getDb();
 
 /* -------------------------------- Jobs ----------------------------------- */
 
-// export function claimNextPendingJob(): JobRow | null {
-//   // Find a pending job
-//   const pending = db.prepare(`
-//     SELECT *
-//       FROM jobs
-//      WHERE status = 'pending'
-//      ORDER BY created_at ASC
-//      LIMIT 1
-//   `).get() as JobRow | undefined;
-
-//   if (!pending) return null;
-
-//   // Attempt atomic claim
-//   const changed = db.prepare(`
-//     UPDATE jobs
-//        SET status = 'running',
-//            updated_at = CURRENT_TIMESTAMP
-//      WHERE id = ? AND status = 'pending'
-//   `).run(pending.id).changes;
-
-//   if (!changed) {
-//     // Lost race
-//     return null;
-//   }
-
-//   // Return fresh row
-//   return getJob(pending.id);
-// }
-
 export function claimNextPendingJob(): JobRow | null {
   // Step 1: find a pending job
   const pending = db.prepare(`

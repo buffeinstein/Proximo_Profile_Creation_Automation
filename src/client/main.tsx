@@ -1,11 +1,3 @@
-// import React from 'react';
-// import { createRoot } from 'react-dom/client';
-// import App from './profileApp';
-
-// const container = document.getElementById('root');
-// const root = createRoot(container!);
-// root.render(<App />);
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './ProfileApp';  // <- after renaming the file
