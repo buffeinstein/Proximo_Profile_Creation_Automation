@@ -23,11 +23,11 @@
     /* Path resolution */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["../src/*"]
     }
   },
   "include": [
-    "src/**/*",
+    "../src/**/*",
     "*.ts",
     "*.tsx"
   ],

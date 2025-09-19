@@ -153,7 +153,7 @@ if (process.env.NODE_ENV !== "production") {
 // -----------------------------
 // Routers (new architecture)
 // -----------------------------
-import resumesRouter from "./src/controllers/resumes.controller"; // adjust path if your controller lives elsewhere
+import resumesRouter from "../src/controllers/resumes.controller"; // adjust path if your controller lives elsewhere
 app.use(resumesRouter); // It already declares full paths like /api/resumes/ingest
 
 // -----------------------------
