@@ -131,8 +131,24 @@ const ProfileApp: React.FC = () => {
   const jobIntervalRef = useRef<number | null>(null);
   const snapshotIntervalRef = useRef<number | null>(null);
 
+  // For logging transitions
+  const pollAttemptJobRef = useRef(0);
+  const pollAttemptSnapshotRef = useRef(0);
+  const prevRolesCountRef = useRef<number>(0);
+  const pollStartTimeRef = useRef<number | null>(null);
+  const ingestRequestStartRef = useRef<number | null>(null);
+
   // Start ingest
   const handleStart = useCallback(async () => {
+    console.log("[FE:action] start-ingest click", {
+      candidateName: candidateName || null,
+      jobLink: jobLink || null,
+      hasFile: !!fileInputRef.current?.files?.[0],
+      prevResumeId: resumeId,
+      prevJobId: jobId,
+      ts: Date.now()
+    });
+
     setIngestError(null);
     setIngestLoading(true);
     try {
@@ -142,56 +158,122 @@ const ProfileApp: React.FC = () => {
       if (candidateName.trim()) form.append("candidate_name", candidateName.trim());
       if (jobLink.trim()) form.append("job_link", jobLink.trim());
 
+      console.log("[FE:ingest] sending payload (no parsed roles on client)", {
+        candidateName: candidateName.trim() || null,
+        jobLink: jobLink.trim() || null,
+        fileName: file?.name,
+        fileSize: file?.size,
+        ts: Date.now()
+      });
+      ingestRequestStartRef.current = performance.now();
+
       const resp = await fetch("/api/resumes/ingest", { method: "POST", body: form });
+      const durationMs = ingestRequestStartRef.current != null
+        ? Math.round(performance.now() - ingestRequestStartRef.current)
+        : null;
+
       if (!resp.ok) {
         let msg = `HTTP ${resp.status}`;
         try {
           const errJson = await resp.json();
-          if (errJson?.message) msg = errJson.message;
+            if (errJson?.message) msg = errJson.message;
         } catch { /* ignore */ }
+        console.error("[FE:ingest] error response", {
+          status: resp.status,
+          durationMs
+        });
         throw new Error(msg);
       }
       const data = await resp.json();
+      console.log("[FE:ingest] success", {
+        resumeId: data.resumeId,
+        jobId: data.jobId,
+        durationMs
+      });
       if (!data.resumeId || !data.jobId) throw new Error("Ingest response missing resumeId or jobId");
       setResumeId(data.resumeId);
       setJobId(data.jobId);
       setJobProgress(null);
       setSnapshot(null);
+      prevRolesCountRef.current = 0;
     } catch (e: any) {
+      console.error("[FE:ingest] failure", { message: e.message });
       setIngestError(e.message || "Failed to start ingest");
     } finally {
       setIngestLoading(false);
     }
-  }, [candidateName, jobLink]);
+  }, [candidateName, jobLink, resumeId, jobId]);
 
   // Poll job
   const pollJob = useCallback(async () => {
     if (!jobId) return;
+    pollAttemptJobRef.current += 1;
+    const attempt = pollAttemptJobRef.current;
     try {
       const res = await fetch(`/api/jobs/${jobId}`);
-      if (!res.ok) return;
-      setJobProgress(await res.json());
-    } catch { /* silent */ }
+      if (!res.ok) {
+        console.warn("[FE:poll:job] non-ok response", { attempt, status: res.status });
+        return;
+      }
+      const json = await res.json();
+      console.log("[FE:poll:job] result", {
+        attempt,
+        status: json.status,
+        completed_roles: json.completed_roles,
+        total_roles: json.total_roles
+      });
+      setJobProgress(json);
+    } catch (err) {
+      console.error("[FE:poll:job] fetch error", { attempt, err });
+    }
   }, [jobId]);
 
   // Poll snapshot
   const pollSnapshot = useCallback(async () => {
     if (!resumeId) return;
+    pollAttemptSnapshotRef.current += 1;
+    const attempt = pollAttemptSnapshotRef.current;
     try {
       const res = await fetch(`/api/resumes/${resumeId}/snapshot`);
-      if (!res.ok) return;
-      setSnapshot(await res.json());
-    } catch { /* silent */ }
+      if (!res.ok) {
+        console.warn("[FE:poll:snapshot] non-ok response", { attempt, status: res.status });
+        return;
+      }
+      const json = await res.json();
+      const rolesCount = json.roles?.length || 0;
+      const firstRole = rolesCount ? json.roles[0] : null;
+      const prev = prevRolesCountRef.current;
+      if (rolesCount !== prev) {
+        console.log("[FE:state] rolesCount change", { previous: prev, current: rolesCount, attempt });
+        prevRolesCountRef.current = rolesCount;
+      }
+      console.log("[FE:poll:snapshot] summary", {
+        attempt,
+        rolesCount,
+        firstRoleKeys: firstRole ? Object.keys(firstRole) : null
+      });
+      setSnapshot(json);
+    } catch (err) {
+      console.error("[FE:poll:snapshot] fetch error", { attempt, err });
+    }
   }, [resumeId]);
 
   // Start intervals when IDs appear
   useEffect(() => {
     if (!resumeId || !jobId) return;
+    pollStartTimeRef.current = performance.now();
+    console.log("[FE:poll:init]", {
+      resumeId,
+      jobId,
+      intervalMs: POLL_INTERVAL_MS,
+      ts: Date.now()
+    });
     pollJob();
     pollSnapshot();
     jobIntervalRef.current = window.setInterval(pollJob, POLL_INTERVAL_MS);
     snapshotIntervalRef.current = window.setInterval(pollSnapshot, POLL_INTERVAL_MS);
     return () => {
+      console.log("[FE:poll:cleanup] clearing intervals (unmount or id change)");
       if (jobIntervalRef.current) window.clearInterval(jobIntervalRef.current);
       if (snapshotIntervalRef.current) window.clearInterval(snapshotIntervalRef.current);
       jobIntervalRef.current = null;
@@ -206,10 +288,17 @@ const ProfileApp: React.FC = () => {
       if (snapshotIntervalRef.current) window.clearInterval(snapshotIntervalRef.current);
       jobIntervalRef.current = null;
       snapshotIntervalRef.current = null;
+      const totalDurationMs = pollStartTimeRef.current != null
+        ? Math.round(performance.now() - pollStartTimeRef.current)
+        : null;
+      console.log("[FE:stop] job completed, stopping polling", {
+        totalDurationMs,
+        finalRolesCount: snapshot?.roles?.length || 0
+      });
       // final snapshot fetch
       pollSnapshot();
     }
-  }, [jobProgress, pollSnapshot]);
+  }, [jobProgress, pollSnapshot, snapshot]);
 
   // Determine how many role modules to show:
   // Priority:
@@ -246,6 +335,16 @@ const ProfileApp: React.FC = () => {
       _placeholder: true
     };
   });
+
+  // Log when roles become available for rendering
+  useEffect(() => {
+    if (snapshot?.roles?.length) {
+      console.log("[FE:render] roles available", {
+        count: snapshot.roles.length,
+        firstRole: snapshot.roles[0]
+      });
+    }
+  }, [snapshot?.roles]);
 
   const progressPercent = jobProgress
     ? jobProgress.total_roles === 0
@@ -284,7 +383,7 @@ const ProfileApp: React.FC = () => {
               `Role Title${role._placeholder ? "" : ""}`
             )}
           </span>
-          <span style={{ opacity: 0.5 }}>—</span>
+            <span style={{ opacity: 0.5 }}>—</span>
           <span>{valOrPlaceholder(role.company, "Company")}</span>
           <span style={{ opacity: 0.5 }}>—</span>
           <span>
